@@ -1,29 +1,201 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-<meta charset="utf-8">
-<title>绕过Edge下载限制</title>
-<style>
-body{padding:30px;background:#111;color:#fff}
-input{width:100%;padding:12px;margin:10px 0}
-button{padding:12px 25px;background:#0078d4;color:white;border:none;width:100%}
-</style>
+    <meta charset="UTF-8">
+    <title>🔍 锁机环境检测工具</title>
+    <style>
+        * {margin: 0; padding: 0; box-sizing: border-box;}
+        body {
+            background: #121212;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            font-size: 16px;
+        }
+        .container {max-width: 800px; margin: 0 auto;}
+        h1 {text-align: center; margin-bottom: 30px; color: #0078d4;}
+        .test-item {
+            background: #1e1e1e;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #666;
+        }
+        .test-item.success {border-left-color: #4caf50;}
+        .test-item.fail {border-left-color: #f44336;}
+        .test-title {font-weight: bold; margin-bottom: 5px;}
+        .test-result {font-size: 14px; opacity: 0.8;}
+        button {
+            background: #0078d4;
+            color: #fff;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+            font-size: 16px;
+        }
+        button:hover {background: #005a9e;}
+    </style>
 </head>
 <body>
-<h1>🔓 Edge 下载解锁器</h1>
-<input type="text" id="url" placeholder="输入文件直链">
-<button onclick="start()">下载</button>
+    <div class="container">
+        <h1>🔍 锁机环境检测工具</h1>
+        <button onclick="runAllTests()">开始全面检测</button>
+        <div id="testResults"></div>
+    </div>
 
-<script>
-async function start(){
-  const url = document.getElementById('url').value;
-  const res = await fetch(url);
-  const blob = await res.blob();
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = url.split('/').pop();
-  a.click();
-}
-</script>
+    <script>
+        // 检测结果容器
+        const resultContainer = document.getElementById('testResults');
+        
+        // 单个检测函数
+        function runTest(title, testFunc) {
+            const item = document.createElement('div');
+            item.className = 'test-item';
+            item.innerHTML = `<div class="test-title">${title}</div><div class="test-result">检测中...</div>`;
+            resultContainer.appendChild(item);
+
+            try {
+                const result = testFunc();
+                item.className = 'test-item ' + (result ? 'success' : 'fail');
+                item.innerHTML = `
+                    <div class="test-title">${title}</div>
+                    <div class="test-result">${result ? '✅ 可用' : '❌ 被封'}</div>
+                `;
+            } catch (e) {
+                item.className = 'test-item fail';
+                item.innerHTML = `
+                    <div class="test-title">${title}</div>
+                    <div class="test-result">❌ 被封（错误：${e.message.substring(0, 50)}）</div>
+                `;
+            }
+        }
+
+        // 全量检测
+        function runAllTests() {
+            resultContainer.innerHTML = '';
+            
+            // 1. 新建标签页
+            runTest('新建标签页', () => {
+                try {
+                    window.open('about:blank');
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            });
+
+            // 2. 查看源代码（Ctrl+U 模拟）
+            runTest('查看源代码', () => {
+                try {
+                    const sourceWin = window.open(`view-source:${window.location.href}`);
+                    return sourceWin !== null;
+                } catch (e) {
+                    return false;
+                }
+            });
+
+            // 3. 打印功能（Ctrl+P 模拟）
+            runTest('打印功能', () => {
+                try {
+                    window.print();
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            });
+
+            // 4. 下载功能
+            runTest('下载文件', async () => {
+                try {
+                    const res = await fetch('https://www.baidu.com/favicon.ico');
+                    const blob = await res.blob();
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = 'test.ico';
+                    a.click();
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            });
+
+            // 5. 右键菜单
+            runTest('右键菜单', () => {
+                try {
+                    const event = new MouseEvent('contextmenu', {
+                        bubbles: true,
+                        cancelable: true
+                    });
+                    return document.body.dispatchEvent(event);
+                } catch (e) {
+                    return false;
+                }
+            });
+
+            // 6. About协议访问
+            runTest('访问 about:blank', () => {
+                try {
+                    window.location.href = 'about:blank';
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            });
+
+            // 7. 本地存储（LocalStorage）
+            runTest('本地存储（LocalStorage）', () => {
+                try {
+                    localStorage.setItem('test', '123');
+                    localStorage.removeItem('test');
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            });
+
+            // 8. Iframe加载外部链接
+            runTest('Iframe加载外部链接', () => {
+                try {
+                    const iframe = document.createElement('iframe');
+                    iframe.src = 'https://www.baidu.com';
+                    iframe.style.display = 'none';
+                    document.body.appendChild(iframe);
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            });
+
+            // 9. 开发者工具（F12）
+            runTest('开发者工具（F12）', () => {
+                try {
+                    // 模拟F12触发
+                    const event = new KeyboardEvent('keydown', {
+                        key: 'F12',
+                        code: 'F12',
+                        bubbles: true
+                    });
+                    document.dispatchEvent(event);
+                    return true;
+                } catch (e) {
+                    return false;
+                }
+            });
+
+            // 10. 复制粘贴
+            runTest('复制粘贴功能', async () => {
+                try {
+                    await navigator.clipboard.writeText('test');
+                    const text = await navigator.clipboard.readText();
+                    return text === 'test';
+                } catch (e) {
+                    return false;
+                }
+            });
+        }
+    </script>
 </body>
 </html>
