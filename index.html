@@ -2,107 +2,76 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Steam文件启动器</title>
+    <title>Steam文件启动器（修复版）</title>
     <style>
-        /* 适配Steam浏览器，字体大、按钮显眼 */
-        body {
-            font-size: 20px;
-            padding: 30px;
-            max-width: 600px;
-            margin: 0 auto;
-            background: #f5f5f5;
-        }
-        .container {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px #ccc;
-        }
-        input {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            font-size: 18px;
-            box-sizing: border-box;
-            border: 2px solid #2a475e;
-            border-radius: 4px;
-        }
-        button {
-            width: 100%;
-            padding: 15px;
-            font-size: 20px;
-            background: #66c0f4;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        button:hover {
-            background: #4a90e2;
-        }
-        .tip {
-            color: red;
-            margin-top: 15px;
-            font-weight: bold;
-        }
-        .success {
-            color: green;
-            margin-top: 15px;
-            font-weight: bold;
-        }
+        body {font-size: 20px; padding: 30px; max-width: 600px; margin: 0 auto; background: #f5f5f5;}
+        .container {background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px #ccc;}
+        input {width: 100%; padding: 12px; margin: 10px 0; font-size: 18px; box-sizing: border-box; border: 2px solid #2a475e; border-radius: 4px;}
+        button {width: 100%; padding: 15px; font-size: 20px; background: #66c0f4; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;}
+        button:hover {background: #4a90e2;}
+        .tip {color: red; margin-top: 15px; font-weight: bold;}
+        .success {color: green; margin-top: 15px; font-weight: bold;}
+        .example {color: #666; margin: 10px 0; font-size: 16px;}
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Steam文件启动器</h1>
-        <p>请输入文件完整路径（例：D:\\MyFiles\\myapp.exe）</p>
-        <!-- 输入框：填你下载时选的路径 -->
-        <input type="text" id="filePath" placeholder="例：D:\\Tools\\test.exe 或 steam://run/730">
-        <!-- 点击按钮触发启动 -->
+        <h1>Steam文件启动器（修复版）</h1>
+        <p>请输入文件完整路径（无需双引号，支持中文）</p>
+        <div class="example">✅ 正确示例：D:\F710C\测试文件.pdf</div>
+        <div class="example">❌ 错误示例："D:\F710C\测试文件.pdf"（带双引号）</div>
+        <input type="text" id="filePath" placeholder="例：D:\Tools\test.exe 或 steam://run/730">
         <button onclick="runFile()">点击启动文件</button>
         <div id="message" class="tip"></div>
     </div>
 
     <script>
-        // 核心函数：触发Steam协议启动文件
+        // 核心修复：解码路径+兼容Steam协议
         function runFile() {
-            // 获取输入框的路径
-            const path = document.getElementById('filePath').value.trim();
+            const pathInput = document.getElementById('filePath');
             const message = document.getElementById('message');
+            let path = pathInput.value.trim();
 
-            // 校验：不能为空
+            // 1. 移除多余双引号（最常见错误）
+            path = path.replace(/"/g, '');
+            // 2. 替换单反斜杠为单反斜杠（避免编码）
+            path = path.replace(/\\/g, '\\');
+            // 3. 校验不能为空
             if (!path) {
                 message.className = "tip";
                 message.textContent = "❌ 错误：请输入文件完整路径！";
                 return;
             }
 
-            // 拼接Steam协议链接
+            // 4. 拼接Steam协议（关键：不编码中文/特殊字符）
             let steamUrl;
-            // 如果输入的是steam://开头，直接用；否则拼接steam://open/
             if (path.startsWith('steam://')) {
                 steamUrl = path;
             } else {
+                // 修复：直接拼接，不做URL编码
                 steamUrl = `steam://open/${path}`;
             }
 
-            // 触发启动
-            window.location.href = steamUrl;
-            
-            // 提示成功
-            message.className = "success";
-            message.textContent = `✅ 已触发启动：${path}`;
-            
-            // 清空输入框（可选）
-            // document.getElementById('filePath').value = "";
+            // 5. 触发Steam协议（用iframe绕过编码问题）
+            try {
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = steamUrl;
+                document.body.appendChild(iframe);
+                // 提示成功
+                message.className = "success";
+                message.textContent = `✅ 已触发启动：${path}`;
+                // 清理iframe
+                setTimeout(() => document.body.removeChild(iframe), 1000);
+            } catch (e) {
+                message.className = "tip";
+                message.textContent = `❌ 启动失败：${e.message}，请检查路径是否正确`;
+            }
         }
 
-        // 按回车键也能触发（方便操作）
+        // 回车键触发
         document.getElementById('filePath').addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                runFile();
-            }
+            if (e.key === 'Enter') runFile();
         });
     </script>
 </body>
