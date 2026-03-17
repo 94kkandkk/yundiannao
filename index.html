@@ -1,78 +1,29 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Steam文件启动器（修复版）</title>
-    <style>
-        body {font-size: 20px; padding: 30px; max-width: 600px; margin: 0 auto; background: #f5f5f5;}
-        .container {background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px #ccc;}
-        input {width: 100%; padding: 12px; margin: 10px 0; font-size: 18px; box-sizing: border-box; border: 2px solid #2a475e; border-radius: 4px;}
-        button {width: 100%; padding: 15px; font-size: 20px; background: #66c0f4; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;}
-        button:hover {background: #4a90e2;}
-        .tip {color: red; margin-top: 15px; font-weight: bold;}
-        .success {color: green; margin-top: 15px; font-weight: bold;}
-        .example {color: #666; margin: 10px 0; font-size: 16px;}
-    </style>
+<meta charset="utf-8">
+<title>绕过Edge下载限制</title>
+<style>
+body{padding:30px;background:#111;color:#fff}
+input{width:100%;padding:12px;margin:10px 0}
+button{padding:12px 25px;background:#0078d4;color:white;border:none;width:100%}
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1>Steam文件启动器（修复版）</h1>
-        <p>请输入文件完整路径（无需双引号，支持中文）</p>
-        <div class="example">✅ 正确示例：D:\F710C\测试文件.pdf</div>
-        <div class="example">❌ 错误示例："D:\F710C\测试文件.pdf"（带双引号）</div>
-        <input type="text" id="filePath" placeholder="例：D:\Tools\test.exe 或 steam://run/730">
-        <button onclick="runFile()">点击启动文件</button>
-        <div id="message" class="tip"></div>
-    </div>
+<h1>🔓 Edge 下载解锁器</h1>
+<input type="text" id="url" placeholder="输入文件直链">
+<button onclick="start()">下载</button>
 
-    <script>
-        // 核心修复：解码路径+兼容Steam协议
-        function runFile() {
-            const pathInput = document.getElementById('filePath');
-            const message = document.getElementById('message');
-            let path = pathInput.value.trim();
-
-            // 1. 移除多余双引号（最常见错误）
-            path = path.replace(/"/g, '');
-            // 2. 替换单反斜杠为单反斜杠（避免编码）
-            path = path.replace(/\\/g, '\\');
-            // 3. 校验不能为空
-            if (!path) {
-                message.className = "tip";
-                message.textContent = "❌ 错误：请输入文件完整路径！";
-                return;
-            }
-
-            // 4. 拼接Steam协议（关键：不编码中文/特殊字符）
-            let steamUrl;
-            if (path.startsWith('steam://')) {
-                steamUrl = path;
-            } else {
-                // 修复：直接拼接，不做URL编码
-                steamUrl = `steam://open/${path}`;
-            }
-
-            // 5. 触发Steam协议（用iframe绕过编码问题）
-            try {
-                const iframe = document.createElement('iframe');
-                iframe.style.display = 'none';
-                iframe.src = steamUrl;
-                document.body.appendChild(iframe);
-                // 提示成功
-                message.className = "success";
-                message.textContent = `✅ 已触发启动：${path}`;
-                // 清理iframe
-                setTimeout(() => document.body.removeChild(iframe), 1000);
-            } catch (e) {
-                message.className = "tip";
-                message.textContent = `❌ 启动失败：${e.message}，请检查路径是否正确`;
-            }
-        }
-
-        // 回车键触发
-        document.getElementById('filePath').addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') runFile();
-        });
-    </script>
+<script>
+async function start(){
+  const url = document.getElementById('url').value;
+  const res = await fetch(url);
+  const blob = await res.blob();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = url.split('/').pop();
+  a.click();
+}
+</script>
 </body>
 </html>
